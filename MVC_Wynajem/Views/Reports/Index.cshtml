@@ -1,0 +1,161 @@
+@{
+    ViewData["Title"] = "Raporty i statystyki";
+    var totalResources = ViewBag.TotalResources as int? ?? 0;
+    var availableResources = ViewBag.AvailableResources as int? ?? 0;
+    var totalUsers = ViewBag.TotalUsers as int? ?? 0;
+    var activeReservationsToday = ViewBag.ActiveReservationsToday as int? ?? 0;
+    var reservationsThisMonth = ViewBag.ReservationsThisMonth as int? ?? 0;
+    var popularResources = ViewBag.PopularResources as IEnumerable<dynamic> ?? new List<dynamic>();
+    var activeUsers = ViewBag.ActiveUsers as IEnumerable<dynamic> ?? new List<dynamic>();
+}
+
+<div class="container mt-4">
+    <h2>Raporty i statystyki systemu Reservo</h2>
+    
+    <!-- Podstawowe statystyki -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">@totalResources</h5>
+                    <p class="card-text small">Zasoby ogółem</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-success">@availableResources</h5>
+                    <p class="card-text small">Dostępne zasoby</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-info">@totalUsers</h5>
+                    <p class="card-text small">Użytkownicy</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">@activeReservationsToday</h5>
+                    <p class="card-text small">Aktywne rezerwacje dzisiaj</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">@reservationsThisMonth</h5>
+                    <p class="card-text small">Rezerwacje w tym miesiącu</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Szybkie akcje -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <a href="@Url.Action("Calendar")" class="btn btn-primary btn-lg w-100">
+                <i class="fas fa-calendar"></i><br>
+                Kalendarz rezerwacji
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="@Url.Action("ResourceUsage")" class="btn btn-success btn-lg w-100">
+                <i class="fas fa-chart-bar"></i><br>
+                Wykorzystanie zasobów
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="@Url.Action("Availability")" class="btn btn-info btn-lg w-100">
+                <i class="fas fa-clock"></i><br>
+                Dostępność zasobów
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/api-docs" target="_blank" class="btn btn-secondary btn-lg w-100">
+                <i class="fas fa-code"></i><br>
+                Dokumentacja API
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Najpopularniejsze zasoby -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Najpopularniejsze zasoby (ten miesiąc)</h5>
+                </div>
+                <div class="card-body">
+                    @if (popularResources.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var item in popularResources)
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>@item.Resource?.Name</strong>
+                                        @if (item.Resource?.Category != null)
+                                        {
+                                            <br><small class="text-muted">@item.Resource.Category.Name</small>
+                                        }
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-primary rounded-pill">@item.Count rezerwacji</span><br>
+                                        <small class="text-muted">@item.TotalHours h</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Brak danych o rezerwacjach w tym miesiącu.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Najbardziej aktywni użytkownicy -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Najbardziej aktywni użytkownicy (ten miesiąc)</h5>
+                </div>
+                <div class="card-body">
+                    @if (activeUsers.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var item in activeUsers)
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>@item.User?.Username</strong>
+                                        <br><small class="text-muted">@item.User?.Role</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-success rounded-pill">@item.Count rezerwacji</span><br>
+                                        <small class="text-muted">@item.TotalHours h</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Brak aktywnych użytkowników w tym miesiącu.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="@Url.Action("Zalogowany", "IO")" class="btn btn-secondary">Powrót do panelu głównego</a>
+    </div>
+</div>

@@ -1,0 +1,269 @@
+@model Reservo.Models.Resource
+@{
+    ViewData["Title"] = "Dostępność zasobu";
+    var startDate = ViewBag.StartDate as DateTime? ?? DateTime.Today;
+    var endDate = ViewBag.EndDate as DateTime? ?? DateTime.Today.AddDays(30);
+    var reservations = ViewBag.Reservations as List<Reservo.Models.Reservation> ?? new List<Reservo.Models.Reservation>();
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Dostępność zasobu: @Model.Name</h2>
+        <div>
+            @if (Model.Category != null)
+            {
+                <span class="badge fs-6 me-2" style="background-color: @Model.Category.Color">
+                    @Model.Category.Name
+                </span>
+            }
+            <span class="badge @(Model.IsAvailable ? "bg-success" : "bg-danger") fs-6">
+                @(Model.IsAvailable ? "Dostępny" : "Niedostępny")
+            </span>
+        </div>
+    </div>
+
+    <!-- Informacje o zasobie -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Informacje o zasobie</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Nazwa:</dt>
+                        <dd class="col-sm-8">@Model.Name</dd>
+                        
+                        @if (!string.IsNullOrEmpty(Model.Description))
+                        {
+                            <dt class="col-sm-4">Opis:</dt>
+                            <dd class="col-sm-8">@Model.Description</dd>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(Model.Location))
+                        {
+                            <dt class="col-sm-4">Lokalizacja:</dt>
+                            <dd class="col-sm-8">@Model.Location</dd>
+                        }
+                        
+                        @if (Model.MaxReservationHours > 0)
+                        {
+                            <dt class="col-sm-4">Maks. czas rezerwacji:</dt>
+                            <dd class="col-sm-8">@Model.MaxReservationHours h</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Statystyki</h5>
+                </div>
+                <div class="card-body">
+                    @{
+                        var activeReservations = reservations.Where(r => r.StartDate <= DateTime.Now && r.EndDate > DateTime.Now).ToList();
+                        var upcomingReservations = reservations.Where(r => r.StartDate > DateTime.Now).ToList();
+                        var totalHours = reservations.Sum(r => (r.EndDate - r.StartDate).TotalHours);
+                    }
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-primary">@reservations.Count</h4>
+                            <small>Rezerwacji (30 dni)</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">@totalHours.ToString("F0")</h4>
+                            <small>Godzin zarezerwowanych</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-warning">@activeReservations.Count</h4>
+                            <small>Aktywne teraz</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-info">@upcomingReservations.Count</h4>
+                            <small>Nadchodzące</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Harmonogram rezerwacji -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Harmonogram rezerwacji (@startDate.ToString("dd.MM.yyyy") - @endDate.ToString("dd.MM.yyyy"))</h5>
+        </div>
+        <div class="card-body">
+            @if (reservations.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Data rozpoczęcia</th>
+                                <th>Data zakończenia</th>
+                                <th>Czas trwania</th>
+                                <th>Użytkownik</th>
+                                <th>Cel</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var reservation in reservations)
+                            {
+                                var duration = reservation.EndDate - reservation.StartDate;
+                                var isActive = reservation.StartDate <= DateTime.Now && reservation.EndDate > DateTime.Now;
+                                var isPast = reservation.EndDate <= DateTime.Now;
+                                
+                                <tr class="@(isActive ? "table-warning" : isPast ? "table-light" : "")">
+                                    <td>
+                                        @reservation.StartDate.ToString("dd.MM.yyyy HH:mm")
+                                        @if (isActive)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1">AKTYWNA</span>
+                                        }
+                                    </td>
+                                    <td>@reservation.EndDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>
+                                        @if (duration.Days > 0)
+                                        {
+                                            <text>@duration.Days d @duration.Hours h</text>
+                                        }
+                                        else
+                                        {
+                                            <text>@duration.TotalHours.ToString("F1") h</text>
+                                        }
+                                    </td>
+                                    <td>@reservation.User?.Username</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(reservation.Purpose))
+                                        {
+                                            <span class="text-truncate" style="max-width: 200px;" title="@reservation.Purpose">
+                                                @reservation.Purpose
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Brak opisu</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @switch (reservation.Status)
+                                        {
+                                            case Reservo.Models.ReservationStatus.Active:
+                                                <span class="badge bg-success">Aktywna</span>
+                                                break;
+                                            case Reservo.Models.ReservationStatus.Cancelled:
+                                                <span class="badge bg-danger">Anulowana</span>
+                                                break;
+                                            case Reservo.Models.ReservationStatus.Completed:
+                                                <span class="badge bg-secondary">Zakończona</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-primary">@reservation.Status</span>
+                                                break;
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Wolne terminy -->
+                <hr>
+                <h6>Najbliższe wolne terminy</h6>
+                var freeSlots = new List<(DateTime Start, DateTime End)>();
+                var currentTime = DateTime.Now;
+                var checkTime = currentTime.Date.AddHours(currentTime.Hour + 1); // Następna pełna godzina
+                
+                // Znajdź wolne sloty między rezerwacjami
+                var sortedReservations = reservations.Where(r => r.StartDate > currentTime).OrderBy(r => r.StartDate).ToList();
+                
+                if (!sortedReservations.Any())
+                {
+                    freeSlots.Add((checkTime, endDate));
+                }
+                else
+                {
+                    // Przed pierwszą rezerwacją
+                    if (sortedReservations.First().StartDate > checkTime)
+                    {
+                        freeSlots.Add((checkTime, sortedReservations.First().StartDate));
+                    }
+                    
+                    // Między rezerwacjami
+                    for (int i = 0; i < sortedReservations.Count - 1; i++)
+                    {
+                        var gap = sortedReservations[i + 1].StartDate - sortedReservations[i].EndDate;
+                        if (gap.TotalHours >= 1) // Tylko sloty dłuższe niż godzina
+                        {
+                            freeSlots.Add((sortedReservations[i].EndDate, sortedReservations[i + 1].StartDate));
+                        }
+                    }
+                    
+                    // Po ostatniej rezerwacji
+                    if (sortedReservations.Last().EndDate < endDate)
+                    {
+                        freeSlots.Add((sortedReservations.Last().EndDate, endDate));
+                    }
+                }
+                
+                @if (freeSlots.Any())
+                {
+                    <div class="row">
+                        @foreach (var slot in freeSlots.Take(6))
+                        {
+                            var duration = slot.End - slot.Start;
+                            <div class="col-md-4 mb-2">
+                                <div class="card border-success">
+                                    <div class="card-body py-2">
+                                        <small class="text-success">
+                                            <i class="fas fa-clock"></i>
+                                            @slot.Start.ToString("dd.MM HH:mm") - @slot.End.ToString("dd.MM HH:mm")
+                                            <br>
+                                            <strong>Czas: @duration.TotalHours.ToString("F0") godzin</strong>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Brak wolnych terminów w najbliższych 30 dniach.
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    Zasób jest w pełni dostępny w wybranym okresie. Brak zaplanowanych rezerwacji.
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Akcje -->
+    <div class="mt-4">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Powrót do listy zasobów
+        </a>
+        <a href="@Url.Action("Details", new { id = Model.Id })" class="btn btn-info">
+            <i class="fas fa-info-circle"></i> Szczegóły zasobu
+        </a>
+        <a href="@Url.Action("Create", "Reservations", new { resourceId = Model.Id })" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Zarezerwuj zasób
+        </a>
+    </div>
+</div>

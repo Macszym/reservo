@@ -1,0 +1,175 @@
+@model Reservo.Models.Reservation
+@{
+    ViewData["Title"] = "Nowa rezerwacja";
+    var selectedResource = ViewBag.SelectedResource as Reservo.Models.Resource;
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Utwórz nową rezerwację</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" id="reservationForm">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="ResourceId" class="form-label">Zasób</label>
+                            <select asp-for="ResourceId" class="form-select" asp-items="ViewBag.Resources" 
+                                    onchange="updateResourceInfo()" id="resourceSelect">
+                                <option value="">Wybierz zasób</option>
+                            </select>
+                            <span asp-validation-for="ResourceId" class="text-danger"></span>
+                        </div>
+                        
+                        @if (selectedResource != null)
+                        {
+                            <div class="alert alert-info" id="resourceInfo">
+                                <h6>@selectedResource.Name</h6>
+                                <p>@selectedResource.Description</p>
+                                <p><strong>Maksymalny czas rezerwacji:</strong> @selectedResource.MaxReservationHours godzin</p>
+                                @if (!string.IsNullOrEmpty(selectedResource.Location))
+                                {
+                                    <p><strong>Lokalizacja:</strong> @selectedResource.Location</p>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info d-none" id="resourceInfo">
+                                <div id="resourceInfoContent"></div>
+                            </div>
+                        }
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="StartDate" class="form-label"></label>
+                                    <input asp-for="StartDate" class="form-control" type="datetime-local" 
+                                           onchange="calculateDuration()" id="startDate" />
+                                    <span asp-validation-for="StartDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="EndDate" class="form-label"></label>
+                                    <input asp-for="EndDate" class="form-control" type="datetime-local" 
+                                           onchange="calculateDuration()" id="endDate" />
+                                    <span asp-validation-for="EndDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-secondary d-none" id="durationInfo">
+                            <strong>Czas rezerwacji:</strong> <span id="durationText"></span>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="Purpose" class="form-label"></label>
+                            <textarea asp-for="Purpose" class="form-control" rows="3" 
+                                      placeholder="Opcjonalnie - opisz cel rezerwacji"></textarea>
+                            <span asp-validation-for="Purpose" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="@Url.Action("Index")" class="btn btn-secondary me-md-2">Anuluj</a>
+                            <button type="submit" class="btn btn-success" id="submitBtn">Utwórz rezerwację</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Ustaw domyślną datę początkową na teraz + 1 godzina
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            now.setHours(now.getHours() + 1, 0, 0, 0); // Następna pełna godzina
+            
+            const startDate = document.getElementById('startDate');
+            const endDate = document.getElementById('endDate');
+            
+            if (!startDate.value) {
+                startDate.value = now.toISOString().slice(0, 16);
+            }
+            
+            if (!endDate.value) {
+                const end = new Date(now);
+                end.setHours(end.getHours() + 2); // Domyślnie 2 godziny
+                endDate.value = end.toISOString().slice(0, 16);
+            }
+            
+            calculateDuration();
+        });
+
+        function updateResourceInfo() {
+            const select = document.getElementById('resourceSelect');
+            const infoDiv = document.getElementById('resourceInfo');
+            const resourceId = select.value;
+            
+            if (resourceId) {
+                // Tu można by było zrobić AJAX call po szczegóły zasobu
+                // Na razie po prostu pokaż div
+                infoDiv.classList.remove('d-none');
+            } else {
+                infoDiv.classList.add('d-none');
+            }
+        }
+
+        function calculateDuration() {
+            const startDate = document.getElementById('startDate');
+            const endDate = document.getElementById('endDate');
+            const durationInfo = document.getElementById('durationInfo');
+            const durationText = document.getElementById('durationText');
+            
+            if (startDate.value && endDate.value) {
+                const start = new Date(startDate.value);
+                const end = new Date(endDate.value);
+                
+                if (end > start) {
+                    const diffMs = end - start;
+                    const diffHours = diffMs / (1000 * 60 * 60);
+                    const hours = Math.floor(diffHours);
+                    const minutes = Math.round((diffHours - hours) * 60);
+                    
+                    let durationStr = '';
+                    if (hours > 0) {
+                        durationStr += hours + ' godz';
+                        if (minutes > 0) {
+                            durationStr += ' ' + minutes + ' min';
+                        }
+                    } else if (minutes > 0) {
+                        durationStr = minutes + ' min';
+                    } else {
+                        durationStr = 'Mniej niż minuta';
+                    }
+                    
+                    durationText.textContent = durationStr + ' (' + diffHours.toFixed(1) + 'h)';
+                    durationInfo.classList.remove('d-none');
+                    
+                    // Sprawdź czy nie przekracza maksymalnego czasu
+                    const maxHours = 24; // Domyślnie, można by pobrać z zasobu
+                    if (diffHours > maxHours) {
+                        durationInfo.classList.remove('alert-secondary');
+                        durationInfo.classList.add('alert-warning');
+                        durationText.innerHTML += '<br><small>⚠️ Może przekraczać maksymalny czas rezerwacji</small>';
+                    } else {
+                        durationInfo.classList.remove('alert-warning');
+                        durationInfo.classList.add('alert-secondary');
+                    }
+                } else {
+                    durationInfo.classList.add('d-none');
+                }
+            } else {
+                durationInfo.classList.add('d-none');
+            }
+        }
+    </script>
+}

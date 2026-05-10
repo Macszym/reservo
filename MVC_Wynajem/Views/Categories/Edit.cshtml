@@ -1,0 +1,167 @@
+@model Reservo.Models.Category
+@{
+    ViewData["Title"] = "Edytuj kategorię";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Edytuj kategorię: @Model.Name</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="Id" />
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label"></label>
+                            <input asp-for="Name" class="form-control" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label"></label>
+                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Color" class="form-label">Kolor kategorii</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <input asp-for="Color" type="color" class="form-control form-control-color" 
+                                           title="Wybierz kolor kategorii" />
+                                    <span asp-validation-for="Color" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <input asp-for="Color" type="text" class="form-control" 
+                                           pattern="^#[0-9A-Fa-f]{6}$" />
+                                    <div class="form-text">Kod koloru hex (np. #007bff)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Zapisz zmiany
+                            </button>
+                            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Anuluj
+                            </a>
+                            <a asp-action="Index" class="btn btn-info">
+                                <i class="fas fa-list"></i> Lista kategorii
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Informacje o kategorii</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID kategorii:</strong> @Model.Id</p>
+                    <p><strong>Liczba zasobów:</strong> @(Model.Resources?.Count ?? 0)</p>
+                    
+                    @if (Model.Resources?.Any() == true)
+                    {
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Uwaga!</h6>
+                            <p>Ta kategoria zawiera <strong>@Model.Resources.Count</strong> zasobów. Zmiana koloru lub nazwy wpłynie na ich wyświetlanie.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Podgląd</h6>
+                </div>
+                <div class="card-body">
+                    <div class="card preview-card">
+                        <div class="card-header text-white" style="background-color: @Model.Color;" id="colorPreview">
+                            <h6 class="mb-0" id="namePreview">@Model.Name</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text" id="descriptionPreview">@(string.IsNullOrEmpty(Model.Description) ? "Brak opisu" : Model.Description)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Akcje</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Details", new { id = Model.Id })" class="btn btn-info">
+                            <i class="fas fa-info-circle"></i> Szczegóły kategorii
+                        </a>
+                        <a href="@Url.Action("Delete", new { id = Model.Id })" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Usuń kategorię
+                        </a>
+                        @if (Model.Resources?.Any() != true)
+                        {
+                            <a href="@Url.Action("Create", "Resources", new { categoryId = Model.Id })" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Dodaj pierwszy zasób
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Podgląd na żywo
+        document.addEventListener('DOMContentLoaded', function() {
+            const nameInput = document.querySelector('input[name="Name"]');
+            const descriptionInput = document.querySelector('textarea[name="Description"]');
+            const colorInputs = document.querySelectorAll('input[name="Color"]');
+            
+            const namePreview = document.getElementById('namePreview');
+            const descriptionPreview = document.getElementById('descriptionPreview');
+            const colorPreview = document.getElementById('colorPreview');
+            
+            function updatePreview() {
+                namePreview.textContent = nameInput.value || 'Nazwa kategorii';
+                descriptionPreview.textContent = descriptionInput.value || 'Brak opisu';
+                
+                const colorValue = colorInputs[0].value || '#007bff';
+                colorPreview.style.backgroundColor = colorValue;
+                colorInputs.forEach(input => {
+                    if (input !== document.activeElement) {
+                        input.value = colorValue;
+                    }
+                });
+            }
+            
+            nameInput.addEventListener('input', updatePreview);
+            descriptionInput.addEventListener('input', updatePreview);
+            colorInputs.forEach(input => {
+                input.addEventListener('input', updatePreview);
+            });
+            
+            // Synchronizuj oba pola koloru
+            colorInputs.forEach((input, index) => {
+                input.addEventListener('input', function() {
+                    const otherInput = colorInputs[1 - index];
+                    if (this.value && this.value !== otherInput.value) {
+                        otherInput.value = this.value;
+                    }
+                    updatePreview();
+                });
+            });
+        });
+    </script>
+}

@@ -1,0 +1,205 @@
+@{
+    ViewData["Title"] = "Kalendarz rezerwacji";
+    var selectedDate = ViewBag.SelectedDate as DateTime? ?? DateTime.Today;
+    var startOfWeek = ViewBag.StartOfWeek as DateTime? ?? DateTime.Today;
+    var endOfWeek = ViewBag.EndOfWeek as DateTime? ?? DateTime.Today;
+    var weekDays = ViewBag.WeekDays as List<DateTime> ?? new List<DateTime>();
+    var dailyReservations = ViewBag.DailyReservations as Dictionary<DateTime, List<Reservo.Models.Reservation>> ?? new Dictionary<DateTime, List<Reservo.Models.Reservation>>();
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Kalendarz rezerwacji</h2>
+        <div>
+            <a href="@Url.Action("Calendar", new { date = startOfWeek.AddDays(-7) })" class="btn btn-outline-primary">
+                &laquo; Poprzedni tydzień
+            </a>
+            <a href="@Url.Action("Calendar", new { date = DateTime.Today })" class="btn btn-primary">
+                Dzisiaj
+            </a>
+            <a href="@Url.Action("Calendar", new { date = startOfWeek.AddDays(7) })" class="btn btn-outline-primary">
+                Następny tydzień &raquo;
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5>Tydzień @startOfWeek.ToString("dd.MM") - @endOfWeek.ToString("dd.MM.yyyy")</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0">
+                    <thead>
+                        <tr>
+                            @foreach (var day in weekDays)
+                            {
+                                var isToday = day.Date == DateTime.Today;
+                                var isWeekend = day.DayOfWeek == DayOfWeek.Saturday || day.DayOfWeek == DayOfWeek.Sunday;
+                                <th class="text-center @(isToday ? "bg-primary text-white" : isWeekend ? "bg-light" : "")">
+                                    <div>@day.ToString("dddd")</div>
+                                    <div class="h5 mb-0">@day.Day</div>
+                                    <small>@day.ToString("MMM")</small>
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="height: 400px;">
+                            @foreach (var day in weekDays)
+                            {
+                                var dayReservations = dailyReservations.ContainsKey(day) ? dailyReservations[day] : new List<Reservo.Models.Reservation>();
+                                var isToday = day.Date == DateTime.Today;
+                                var isWeekend = day.DayOfWeek == DayOfWeek.Saturday || day.DayOfWeek == DayOfWeek.Sunday;
+                                
+                                <td class="align-top p-2 @(isWeekend ? "bg-light" : "")" style="width: 14.28%; max-width: 150px;">
+                                    @if (dayReservations.Any())
+                                    {
+                                        @foreach (var reservation in dayReservations.Take(4))
+                                        {
+                                            var duration = reservation.EndDate - reservation.StartDate;
+                                            var categoryColor = reservation.Resource?.Category?.Color ?? "#6c757d";
+                                            
+                                            <div class="mb-1 p-1 rounded small" 
+                                                 style="background-color: @categoryColor; color: white; cursor: pointer;"
+                                                 data-bs-toggle="tooltip" 
+                                                 data-bs-html="true"
+                                                 title="<strong>@reservation.Resource?.Name</strong><br>
+                                                        @reservation.User?.Username<br>
+                                                        @reservation.StartDate.ToString("HH:mm") - @reservation.EndDate.ToString("HH:mm")<br>
+                                                        @(string.IsNullOrEmpty(reservation.Purpose) ? "" : reservation.Purpose)">
+                                                <div class="text-truncate">
+                                                    <strong>@reservation.Resource?.Name</strong>
+                                                </div>
+                                                <div class="text-truncate" style="font-size: 0.75em;">
+                                                    @reservation.StartDate.ToString("HH:mm") - @reservation.EndDate.ToString("HH:mm")
+                                                </div>
+                                                <div class="text-truncate" style="font-size: 0.7em; opacity: 0.9;">
+                                                    @reservation.User?.Username
+                                                </div>
+                                            </div>
+                                        }
+                                        @if (dayReservations.Count > 4)
+                                        {
+                                            <div class="text-muted small">
+                                                +@(dayReservations.Count - 4) więcej...
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="text-muted small h-100 d-flex align-items-center justify-content-center">
+                                            Brak rezerwacji
+                                        </div>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legenda -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Legenda kategorii</h6>
+                </div>
+                <div class="card-body">
+                    @{
+                        var categories = new List<dynamic>();
+                        foreach (var day in dailyReservations.Values)
+                        {
+                            foreach (var reservation in day)
+                            {
+                                if (reservation.Resource?.Category != null)
+                                {
+                                    var cat = categories.FirstOrDefault(c => c.Id == reservation.Resource.Category.Id);
+                                    if (cat == null)
+                                    {
+                                        categories.Add(new { 
+                                            Id = reservation.Resource.Category.Id,
+                                            Name = reservation.Resource.Category.Name,
+                                            Color = reservation.Resource.Category.Color
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    @foreach (var category in categories)
+                    {
+                        <span class="badge me-2 mb-1" style="background-color: @category.Color">
+                            @category.Name
+                        </span>
+                    }
+                    @if (!categories.Any())
+                    {
+                        <span class="text-muted">Brak kategorii do wyświetlenia</span>
+                    }
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Statystyki tygodnia</h6>
+                </div>
+                <div class="card-body">
+                    @{
+                        var weekReservations = dailyReservations.Values.SelectMany(x => x).ToList();
+                        var totalReservations = weekReservations.Count;
+                        var totalHours = weekReservations.Sum(r => (r.EndDate - r.StartDate).TotalHours);
+                        var uniqueResources = weekReservations.Select(r => r.ResourceId).Distinct().Count();
+                        var uniqueUsers = weekReservations.Select(r => r.UserId).Distinct().Count();
+                    }
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h5 class="text-primary">@totalReservations</h5>
+                                <small>Rezerwacji</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-success">@totalHours.ToString("F1")</h5>
+                            <small>Godzin</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h5 class="text-info">@uniqueResources</h5>
+                                <small>Zasobów</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-warning">@uniqueUsers</h5>
+                            <small>Użytkowników</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">Powrót do raportów</a>
+    </div>
+</div>
+
+<script>
+    // Inicjalizuj tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>

@@ -1,0 +1,189 @@
+@model Reservo.Models.Reservation
+@{
+    ViewData["Title"] = "Edytuj rezerwację";
+    var resources = ViewBag.Resources as SelectList;
+    var userRole = Context.Session.GetString("UserRole");
+}
+
+<div class="container mt-4">
+    <h2>Edytuj rezerwację</h2>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Edycja rezerwacji #@Model.Id</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="UserId" />
+                        <input type="hidden" asp-for="CreatedAt" />
+
+                        <div class="mb-3">
+                            <label asp-for="ResourceId" class="form-label">Zasób</label>
+                            <select asp-for="ResourceId" asp-items="resources" class="form-select" disabled="@(userRole != "Admin")">
+                                <option value="">Wybierz zasób</option>
+                            </select>
+                            <span asp-validation-for="ResourceId" class="text-danger"></span>
+                            @if (userRole != "Admin")
+                            {
+                                <input type="hidden" asp-for="ResourceId" />
+                                <div class="form-text">Tylko administrator może zmienić zasób</div>
+                            }
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="StartDate" class="form-label">Data i godzina rozpoczęcia</label>
+                                    <input asp-for="StartDate" type="datetime-local" class="form-control" />
+                                    <span asp-validation-for="StartDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="EndDate" class="form-label">Data i godzina zakończenia</label>
+                                    <input asp-for="EndDate" type="datetime-local" class="form-control" />
+                                    <span asp-validation-for="EndDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Purpose" class="form-label">Cel rezerwacji</label>
+                            <textarea asp-for="Purpose" class="form-control" rows="3" placeholder="Opisz cel rezerwacji..."></textarea>
+                            <span asp-validation-for="Purpose" class="text-danger"></span>
+                        </div>
+
+                        @if (userRole == "Admin")
+                        {
+                            <div class="mb-3">
+                                <label asp-for="Status" class="form-label">Status</label>
+                                <select asp-for="Status" class="form-select">
+                                    <option value="@Reservo.Models.ReservationStatus.Active" 
+                                            selected="@(Model.Status == Reservo.Models.ReservationStatus.Active)">
+                                        Aktywna
+                                    </option>
+                                    <option value="@Reservo.Models.ReservationStatus.Cancelled" 
+                                            selected="@(Model.Status == Reservo.Models.ReservationStatus.Cancelled)">
+                                        Anulowana
+                                    </option>
+                                    <option value="@Reservo.Models.ReservationStatus.Completed" 
+                                            selected="@(Model.Status == Reservo.Models.ReservationStatus.Completed)">
+                                        Zakończona
+                                    </option>
+                                </select>
+                                <span asp-validation-for="Status" class="text-danger"></span>
+                            </div>
+                        }
+                        else
+                        {
+                            <input type="hidden" asp-for="Status" />
+                        }
+
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Zapisz zmiany
+                            </button>
+                            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Anuluj
+                            </a>
+                            <a asp-action="Index" class="btn btn-info">
+                                <i class="fas fa-list"></i> Lista rezerwacji
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Informacje o rezerwacji</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID rezerwacji:</strong> @Model.Id</p>
+                    <p><strong>Użytkownik:</strong> @Model.User?.Username</p>
+                    <p><strong>Data utworzenia:</strong><br>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                    
+                    <hr>
+                    
+                    @if (Model.Resource != null)
+                    {
+                        <h6>Aktualny zasób</h6>
+                        <div class="bg-light p-3 rounded">
+                            <strong>@Model.Resource.Name</strong>
+                            @if (Model.Resource.Category != null)
+                            {
+                                <br><span class="badge mt-1" style="background-color: @Model.Resource.Category.Color">
+                                    @Model.Resource.Category.Name
+                                </span>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.Resource.Location))
+                            {
+                                <br><small class="text-muted">@Model.Resource.Location</small>
+                            }
+                            @if (Model.Resource.MaxReservationHours > 0)
+                            {
+                                <br><small class="text-muted">Maks. czas: @Model.Resource.MaxReservationHours h</small>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Wskazówki</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-info-circle text-info"></i> Sprawdź dostępność zasobu przed zapisaniem</li>
+                        <li><i class="fas fa-clock text-warning"></i> Data rozpoczęcia musi być wcześniejsza niż zakończenia</li>
+                        <li><i class="fas fa-calendar text-primary"></i> Rezerwacje nie mogą się nakładać</li>
+                        @if (Model.Resource?.MaxReservationHours > 0)
+                        {
+                            <li><i class="fas fa-stopwatch text-danger"></i> Maksymalny czas: @Model.Resource.MaxReservationHours h</li>
+                        }
+                    </ul>
+                    
+                    <a href="@Url.Action("Availability", "Resources", new { id = Model.ResourceId })" 
+                       class="btn btn-sm btn-outline-info w-100">
+                        <i class="fas fa-calendar-check"></i> Sprawdź dostępność
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Walidacja dat po stronie klienta
+        document.addEventListener('DOMContentLoaded', function() {
+            const startDateInput = document.querySelector('input[name="StartDate"]');
+            const endDateInput = document.querySelector('input[name="EndDate"]');
+            
+            function validateDates() {
+                if (startDateInput.value && endDateInput.value) {
+                    const startDate = new Date(startDateInput.value);
+                    const endDate = new Date(endDateInput.value);
+                    
+                    if (startDate >= endDate) {
+                        endDateInput.setCustomValidity('Data zakończenia musi być późniejsza niż rozpoczęcia');
+                    } else {
+                        endDateInput.setCustomValidity('');
+                    }
+                }
+            }
+            
+            startDateInput.addEventListener('change', validateDates);
+            endDateInput.addEventListener('change', validateDates);
+        });
+    </script>
+}

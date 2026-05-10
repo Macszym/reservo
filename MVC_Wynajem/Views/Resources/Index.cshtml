@@ -1,0 +1,119 @@
+@model IEnumerable<Reservo.Models.Resource>
+@{
+    ViewData["Title"] = "Zasoby";
+    var userRole = Context.Session.GetString("UserRole");
+    var currentCategory = ViewBag.CurrentCategory as int?;
+    var currentFilter = ViewBag.CurrentFilter as string;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Zasoby firmowe</h2>
+        @if (userRole == "Admin")
+        {
+            <a href="@Url.Action("Create")" class="btn btn-success">Dodaj zasób</a>
+        }
+    </div>
+
+    <!-- Filtry -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="categoryId" class="form-label">Kategoria</label>
+                    <select name="categoryId" id="categoryId" class="form-select" asp-items="ViewBag.Categories">
+                        <option value="">Wszystkie kategorie</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="searchString" class="form-label">Wyszukaj</label>
+                    <input type="text" name="searchString" id="searchString" class="form-control" 
+                           value="@currentFilter" placeholder="Nazwa lub opis zasobu...">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Filtruj</button>
+                    <a href="@Url.Action("Index")" class="btn btn-outline-secondary">Wyczyść</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista zasobów -->
+    @if (Model?.Any() == true)
+    {
+        <div class="row">
+            @foreach (var item in Model)
+            {
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">@Html.DisplayFor(modelItem => item.Name)</h6>
+                            @if (item.Category != null)
+                            {
+                                <span class="badge" style="background-color: @item.Category.Color">
+                                    @item.Category.Name
+                                </span>
+                            }
+                        </div>
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(item.Description))
+                            {
+                                <p class="card-text">@Html.DisplayFor(modelItem => item.Description)</p>
+                            }
+                            @if (!string.IsNullOrEmpty(item.Location))
+                            {
+                                <p class="text-muted small">
+                                    <i class="fas fa-map-marker-alt"></i> @Html.DisplayFor(modelItem => item.Location)
+                                </p>
+                            }
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge @(item.IsAvailable ? "bg-success" : "bg-danger")">
+                                    @(item.IsAvailable ? "Dostępny" : "Niedostępny")
+                                </span>
+                                <small class="text-muted">Max: @item.MaxReservationHours h</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="btn-group w-100" role="group">
+                                <a href="@Url.Action("Details", new { id = item.Id })" class="btn btn-outline-primary btn-sm">
+                                    Szczegóły
+                                </a>
+                                <a href="@Url.Action("Availability", new { id = item.Id })" class="btn btn-outline-info btn-sm">
+                                    Dostępność
+                                </a>
+                                @if (item.IsAvailable)
+                                {
+                                    <a href="@Url.Action("Create", "Reservations", new { resourceId = item.Id })" 
+                                       class="btn btn-success btn-sm">
+                                        Rezerwuj
+                                    </a>
+                                }
+                                @if (userRole == "Admin")
+                                {
+                                    <a href="@Url.Action("Edit", new { id = item.Id })" class="btn btn-outline-warning btn-sm">
+                                        Edytuj
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <h5>Brak zasobów</h5>
+            <p>Nie znaleziono zasobów spełniających kryteria wyszukiwania.</p>
+            @if (userRole == "Admin")
+            {
+                <a href="@Url.Action("Create")" class="btn btn-success">Dodaj pierwszy zasób</a>
+            }
+        </div>
+    }
+
+    <div class="mt-4">
+        <a href="@Url.Action("Zalogowany", "IO")" class="btn btn-secondary">Powrót do panelu głównego</a>
+    </div>
+</div>

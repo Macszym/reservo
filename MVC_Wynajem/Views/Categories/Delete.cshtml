@@ -1,0 +1,130 @@
+@model Reservo.Models.Category
+@{
+    ViewData["Title"] = "Usuń kategorię";
+}
+
+<div class="container mt-4">
+    <h2>Usuń kategorię</h2>
+    
+    <div class="alert alert-danger">
+        <h4><i class="fas fa-exclamation-triangle"></i> Potwierdzenie usunięcia</h4>
+        <p>Czy na pewno chcesz usunąć tę kategorię? Ta operacja jest nieodwracalna.</p>
+    </div>
+    
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center" 
+             style="background-color: @Model.Color; color: white;">
+            <h5>Szczegóły usuwanej kategorii</h5>
+            <span class="badge bg-light text-dark">
+                @(Model.Resources?.Count ?? 0) zasobów
+            </span>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Nazwa:</dt>
+                <dd class="col-sm-9">@Model.Name</dd>
+                
+                <dt class="col-sm-3">Opis:</dt>
+                <dd class="col-sm-9">
+                    @if (!string.IsNullOrEmpty(Model.Description))
+                    {
+                        @Model.Description
+                    }
+                    else
+                    {
+                        <span class="text-muted">Brak opisu</span>
+                    }
+                </dd>
+                
+                <dt class="col-sm-3">Kolor:</dt>
+                <dd class="col-sm-9">
+                    <span class="badge" style="background-color: @Model.Color; color: white;">
+                        @Model.Color
+                    </span>
+                </dd>
+                
+                <dt class="col-sm-3">ID kategorii:</dt>
+                <dd class="col-sm-9">@Model.Id</dd>
+                
+                <dt class="col-sm-3">Liczba zasobów:</dt>
+                <dd class="col-sm-9">@(Model.Resources?.Count ?? 0)</dd>
+            </dl>
+            
+            <!-- Ostrzeżenie o powiązanych zasobach -->
+            @if (Model.Resources?.Any() == true)
+            {
+                <div class="alert alert-warning mt-3">
+                    <h6><i class="fas fa-exclamation-circle"></i> Uwaga - Powiązane zasoby!</h6>
+                    <p>Ta kategoria zawiera <strong>@Model.Resources.Count</strong> zasobów. Usunięcie kategorii spowoduje:</p>
+                    <ul>
+                        <li>Wszystkie zasoby w tej kategorii staną się <strong>bez kategorii</strong></li>
+                        <li>Ich kolory i oznaczenia kategorii znikną</li>
+                        <li>Będą wymagały ponownej kategoryzacji</li>
+                    </ul>
+                    
+                    <h6>Lista zasobów, które zostaną odłączone:</h6>
+                    <div class="row">
+                        @foreach (var resource in Model.Resources.Take(6))
+                        {
+                            <div class="col-md-6 mb-2">
+                                <div class="card border-warning">
+                                    <div class="card-body py-2">
+                                        <small>
+                                            <strong>@resource.Name</strong>
+                                            @if (!string.IsNullOrEmpty(resource.Location))
+                                            {
+                                                <br><span class="text-muted">@resource.Location</span>
+                                            }
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        @if (Model.Resources.Count > 6)
+                        {
+                            <div class="col-12">
+                                <small class="text-muted">...i @(Model.Resources.Count - 6) więcej zasobów</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-success mt-3">
+                    <h6><i class="fas fa-check-circle"></i> Bezpieczne usunięcie</h6>
+                    <p>Ta kategoria nie zawiera żadnych zasobów. Można ją bezpiecznie usunąć.</p>
+                </div>
+            }
+            
+            <form asp-action="Delete" method="post" class="mt-4">
+                <input type="hidden" asp-for="Id" />
+                <div class="row">
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Tak, usuń kategorię
+                        </button>
+                    </div>
+                    <div class="col-auto">
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Anuluj
+                        </a>
+                    </div>
+                    <div class="col-auto">
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-info">
+                            <i class="fas fa-info-circle"></i> Szczegóły
+                        </a>
+                    </div>
+                    @if (Model.Resources?.Any() == true)
+                    {
+                        <div class="col-auto">
+                            <a asp-action="Index" asp-controller="Resources" asp-route-categoryId="@Model.Id" class="btn btn-warning">
+                                <i class="fas fa-cubes"></i> Zobacz zasoby
+                            </a>
+                        </div>
+                    }
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

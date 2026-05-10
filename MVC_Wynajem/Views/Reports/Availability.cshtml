@@ -1,0 +1,296 @@
+@{
+    ViewData["Title"] = "Dostępność zasobów";
+    var startDate = ViewBag.StartDate as DateTime? ?? DateTime.Today;
+    var endDate = ViewBag.EndDate as DateTime? ?? DateTime.Today.AddDays(30);
+    var availability = ViewBag.Availability as List<dynamic> ?? new List<dynamic>();
+}
+
+<div class="container mt-4">
+    <h2>Analiza dostępności zasobów</h2>
+    
+    <!-- Filtry daty -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Okres analizy</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="startDate" class="form-label">Data początkowa</label>
+                    <input type="date" name="startDate" id="startDate" class="form-control" 
+                           value="@startDate.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-4">
+                    <label for="endDate" class="form-label">Data końcowa</label>
+                    <input type="date" name="endDate" id="endDate" class="form-control" 
+                           value="@endDate.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary d-block">
+                        <i class="fas fa-search"></i> Analizuj
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Podsumowanie ogólne -->
+    @if (availability.Any())
+    {
+        var totalResources = availability.Count;
+        var fullyAvailable = availability.Count(a => (double)a.AvailabilityPercentage >= 95);
+        var partiallyAvailable = availability.Count(a => (double)a.AvailabilityPercentage >= 50 && (double)a.AvailabilityPercentage < 95);
+        var heavilyBooked = availability.Count(a => (double)a.AvailabilityPercentage < 50);
+        var avgAvailability = availability.Average(a => (double)a.AvailabilityPercentage);
+        
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h4 class="text-success">@fullyAvailable</h4>
+                        <small>Zasoby dostępne<br>(≥95%)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h4 class="text-warning">@partiallyAvailable</h4>
+                        <small>Częściowo dostępne<br>(50-95%)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h4 class="text-danger">@heavilyBooked</h4>
+                        <small>Intensywnie wykorzystane<br>(&lt;50%)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h4 class="text-primary">@avgAvailability.ToString("F1")%</h4>
+                        <small>Średnia dostępność</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Szczegółowa analiza zasobów -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Dostępność zasobów (@startDate.ToString("dd.MM.yyyy") - @endDate.ToString("dd.MM.yyyy"))</h5>
+        </div>
+        <div class="card-body">
+            @if (availability.Any())
+            {
+                @foreach (var resourceData in availability)
+                {
+                    var freeSlots = resourceData.FreeSlots as List<(DateTime Start, DateTime End)> ?? new List<(DateTime Start, DateTime End)>();
+                    var reservations = resourceData.Reservations as List<Reservo.Models.Reservation> ?? new List<Reservo.Models.Reservation>();
+                    
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h6 class="mb-0">
+                                        @resourceData.Resource.Name
+                                        @if (resourceData.Resource.Category != null)
+                                        {
+                                            <span class="badge ms-2" style="background-color: @resourceData.Resource.Category.Color">
+                                                @resourceData.Resource.Category.Name
+                                            </span>
+                                        }
+                                    </h6>
+                                    @if (!string.IsNullOrEmpty(resourceData.Resource.Location))
+                                    {
+                                        <small class="text-muted">@resourceData.Resource.Location</small>
+                                    }
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <span class="badge @(resourceData.AvailabilityPercentage >= 95 ? "bg-success" : resourceData.AvailabilityPercentage >= 50 ? "bg-warning" : "bg-danger") fs-6">
+                                        @resourceData.AvailabilityPercentage.ToString("F1")% dostępne
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Pasek dostępności -->
+                            <div class="mb-3">
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar bg-success" 
+                                         style="width: @resourceData.AvailabilityPercentage%;"
+                                         role="progressbar" 
+                                         aria-valuenow="@resourceData.AvailabilityPercentage" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        Dostępne: @resourceData.TotalFreeHours.ToString("F0")h
+                                    </div>
+                                    <div class="progress-bar bg-danger" 
+                                         style="width: @(100 - resourceData.AvailabilityPercentage)%;">
+                                        Zarezerwowane
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <!-- Statystyki -->
+                                <div class="col-md-4">
+                                    <h6>Statystyki</h6>
+                                    <ul class="list-unstyled">
+                                        <li><strong>Rezerwacje:</strong> @reservations.Count</li>
+                                        <li><strong>Wolne godziny:</strong> @resourceData.TotalFreeHours.ToString("F0") h</li>
+                                        <li><strong>Wolne sloty:</strong> @freeSlots.Count</li>
+                                        @if (resourceData.Resource.MaxReservationHours > 0)
+                                        {
+                                            <li><strong>Maks. rezerwacja:</strong> @resourceData.Resource.MaxReservationHours h</li>
+                                        }
+                                    </ul>
+                                </div>
+
+                                <!-- Najbliższe wolne terminy -->
+                                <div class="col-md-8">
+                                    <h6>Najbliższe wolne terminy</h6>
+                                    @if (freeSlots.Any())
+                                    {
+                                        <div class="row">
+                                            @foreach (var slot in freeSlots.Take(6))
+                                            {
+                                                var duration = slot.End - slot.Start;
+                                                var isLongSlot = duration.TotalHours >= 8;
+                                                
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="card border-@(isLongSlot ? "success" : "info") bg-light">
+                                                        <div class="card-body py-2">
+                                                            <small>
+                                                                <strong>@slot.Start.ToString("dd.MM HH:mm") - @slot.End.ToString("dd.MM HH:mm")</strong>
+                                                                <br>
+                                                                <span class="text-@(isLongSlot ? "success" : "info")">
+                                                                    @if (duration.Days > 0)
+                                                                    {
+                                                                        <text>@duration.Days dni @duration.Hours h</text>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <text>@duration.TotalHours.ToString("F0") godzin</text>
+                                                                    }
+                                                                </span>
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                        
+                                        @if (freeSlots.Count > 6)
+                                        {
+                                            <small class="text-muted">+@(freeSlots.Count - 6) więcej wolnych terminów...</small>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-warning alert-sm">
+                                            Brak wolnych terminów w wybranym okresie
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Akcje -->
+                            <div class="mt-3">
+                                <a href="@Url.Action("Availability", "Resources", new { id = resourceData.Resource.Id })" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-calendar-check"></i> Szczegółowa dostępność
+                                </a>
+                                <a href="@Url.Action("Details", "Resources", new { id = resourceData.Resource.Id })" 
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-info-circle"></i> Szczegóły zasobu
+                                </a>
+                                <a href="@Url.Action("Create", "Reservations", new { resourceId = resourceData.Resource.Id })" 
+                                   class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-plus"></i> Zarezerwuj
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Brak zasobów do analizy w wybranym okresie.
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Rekomendacje -->
+    @if (availability.Any())
+    {
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>Rekomendacje</h5>
+            </div>
+            <div class="card-body">
+                @{
+                    var heavilyBookedResources = availability.Where(a => (double)a.AvailabilityPercentage < 30).ToList();
+                    var underutilizedResources = availability.Where(a => (double)a.AvailabilityPercentage > 90).ToList();
+                }
+                
+                @if (heavilyBookedResources.Any())
+                {
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Zasoby o wysokim obłożeniu</h6>
+                        <p>Następujące zasoby są intensywnie wykorzystywane (dostępność &lt; 30%):</p>
+                        <ul>
+                            @foreach (var resource in heavilyBookedResources)
+                            {
+                                <li>
+                                    <strong>@resource.Resource.Name</strong> - @resource.AvailabilityPercentage.ToString("F1")% dostępności
+                                </li>
+                            }
+                        </ul>
+                        <small>Rozważ dodanie podobnych zasobów lub wydłużenie okresu dostępności.</small>
+                    </div>
+                }
+                
+                @if (underutilizedResources.Any())
+                {
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Zasoby o niskim wykorzystaniu</h6>
+                        <p>Następujące zasoby są słabo wykorzystywane (dostępność > 90%):</p>
+                        <ul>
+                            @foreach (var resource in underutilizedResources)
+                            {
+                                <li>
+                                    <strong>@resource.Resource.Name</strong> - @resource.AvailabilityPercentage.ToString("F1")% dostępności
+                                </li>
+                            }
+                        </ul>
+                        <small>Rozważ promocję tych zasobów lub przeanalizuj ich rzeczywistą potrzebę.</small>
+                    </div>
+                }
+                
+                @if (!heavilyBookedResources.Any() && !underutilizedResources.Any())
+                {
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-check-circle"></i> Optymalne wykorzystanie</h6>
+                        <p>Wszystkie zasoby mają zrównoważone wykorzystanie (30-90% dostępności).</p>
+                        <small>System rezerwacji działa efektywnie.</small>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="mt-4">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Powrót do raportów
+        </a>
+    </div>
+</div>

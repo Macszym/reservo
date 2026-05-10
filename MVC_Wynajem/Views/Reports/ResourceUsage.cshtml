@@ -1,0 +1,269 @@
+@{
+    ViewData["Title"] = "Wykorzystanie zasobów";
+    var startDate = ViewBag.StartDate as DateTime? ?? DateTime.Today.AddDays(-30);
+    var endDate = ViewBag.EndDate as DateTime? ?? DateTime.Today;
+    var selectedResourceId = ViewBag.SelectedResourceId as int?;
+    var resources = ViewBag.Resources as List<Reservo.Models.Resource> ?? new List<Reservo.Models.Resource>();
+    var resourceUsage = ViewBag.ResourceUsage as List<dynamic> ?? new List<dynamic>();
+}
+
+<div class="container mt-4">
+    <h2>Wykorzystanie zasobów</h2>
+    
+    <!-- Filtry -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Filtry</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="resourceId" class="form-label">Zasób</label>
+                    <select name="resourceId" id="resourceId" class="form-select">
+                        <option value="">Wszystkie zasoby</option>
+                        @foreach (var resource in resources)
+                        {
+                            <option value="@resource.Id" selected="@(selectedResourceId == resource.Id)">
+                                @resource.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="startDate" class="form-label">Data od</label>
+                    <input type="date" name="startDate" id="startDate" class="form-control" 
+                           value="@startDate.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-3">
+                    <label for="endDate" class="form-label">Data do</label>
+                    <input type="date" name="endDate" id="endDate" class="form-control" 
+                           value="@endDate.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary d-block">
+                        <i class="fas fa-search"></i> Filtruj
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Wykres wykorzystania (jeśli jeden zasób) -->
+    @if (selectedResourceId.HasValue && resourceUsage.Any())
+    {
+        var usage = resourceUsage.First();
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Szczegółowe wykorzystanie: @usage.Resource.Name</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center mb-3">
+                            <div class="col-md-3">
+                                <h4 class="text-primary">@usage.TotalReservations</h4>
+                                <small>Rezerwacji</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h4 class="text-success">@usage.TotalHours.ToString("F1")</h4>
+                                <small>Godzin wykorzystanych</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h4 class="text-info">@usage.AverageHoursPerReservation.ToString("F1")</h4>
+                                <small>Średnio godzin/rezerwacja</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h4 class="text-warning">@usage.UtilizationPercentage.ToString("F1")%</h4>
+                                <small>Wykorzystanie</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Pasek wykorzystania -->
+                        <div class="mb-3">
+                            <label class="form-label">Poziom wykorzystania</label>
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar @(usage.UtilizationPercentage > 80 ? "bg-danger" : usage.UtilizationPercentage > 50 ? "bg-warning" : "bg-success")" 
+                                     role="progressbar" 
+                                     style="width: @Math.Min(usage.UtilizationPercentage, 100)%;"
+                                     aria-valuenow="@usage.UtilizationPercentage" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    @usage.UtilizationPercentage.ToString("F1")%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Lista wykorzystania zasobów -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Raport wykorzystania (@startDate.ToString("dd.MM.yyyy") - @endDate.ToString("dd.MM.yyyy"))</h5>
+        </div>
+        <div class="card-body">
+            @if (resourceUsage.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Zasób</th>
+                                <th>Kategoria</th>
+                                <th>Liczba rezerwacji</th>
+                                <th>Łączny czas</th>
+                                <th>Średnio/rezerwacja</th>
+                                <th>Wykorzystanie</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var usage in resourceUsage)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@usage.Resource.Name</strong>
+                                        @if (!string.IsNullOrEmpty(usage.Resource.Location))
+                                        {
+                                            <br><small class="text-muted">@usage.Resource.Location</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (usage.Resource.Category != null)
+                                        {
+                                            <span class="badge" style="background-color: @usage.Resource.Category.Color">
+                                                @usage.Resource.Category.Name
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary fs-6">@usage.TotalReservations</span>
+                                    </td>
+                                    <td>@usage.TotalHours.ToString("F1") h</td>
+                                    <td>@usage.AverageHoursPerReservation.ToString("F1") h</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 60px; height: 20px;">
+                                                <div class="progress-bar @(usage.UtilizationPercentage > 80 ? "bg-danger" : usage.UtilizationPercentage > 50 ? "bg-warning" : "bg-success")" 
+                                                     style="width: @Math.Min(usage.UtilizationPercentage, 100)%">
+                                                </div>
+                                            </div>
+                                            <small>@usage.UtilizationPercentage.ToString("F1")%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="@Url.Action("Details", "Resources", new { id = usage.Resource.Id })" 
+                                           class="btn btn-sm btn-outline-info" title="Szczegóły">
+                                            <i class="fas fa-info-circle"></i>
+                                        </a>
+                                        <a href="@Url.Action("Availability", "Resources", new { id = usage.Resource.Id })" 
+                                           class="btn btn-sm btn-outline-success" title="Dostępność">
+                                            <i class="fas fa-calendar-check"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Podsumowanie -->
+                <hr>
+                <div class="row text-center">
+                    @{
+                        var totalReservations = resourceUsage.Sum(u => (int)u.TotalReservations);
+                        var totalHours = resourceUsage.Sum(u => (double)u.TotalHours);
+                        var avgUtilization = resourceUsage.Any() ? resourceUsage.Average(u => (double)u.UtilizationPercentage) : 0;
+                    }
+                    <div class="col-md-3">
+                        <h5 class="text-primary">@totalReservations</h5>
+                        <small>Łączne rezerwacje</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h5 class="text-success">@totalHours.ToString("F1")</h5>
+                        <small>Łączne godziny</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h5 class="text-info">@resourceUsage.Count</h5>
+                        <small>Analizowanych zasobów</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h5 class="text-warning">@avgUtilization.ToString("F1")%</h5>
+                        <small>Średnie wykorzystanie</small>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Brak danych o wykorzystaniu zasobów w wybranym okresie.
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Szczegółowe rezerwacje (jeśli jeden zasób) -->
+    @if (selectedResourceId.HasValue && resourceUsage.Any())
+    {
+        var usage = resourceUsage.First();
+        var reservations = usage.Reservations as List<Reservo.Models.Reservation> ?? new List<Reservo.Models.Reservation>();
+        
+        if (reservations.Any())
+        {
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Szczegółowa historia rezerwacji</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Data rozpoczęcia</th>
+                                    <th>Data zakończenia</th>
+                                    <th>Czas trwania</th>
+                                    <th>Użytkownik</th>
+                                    <th>Cel</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var reservation in reservations)
+                                {
+                                    var duration = reservation.EndDate - reservation.StartDate;
+                                    <tr>
+                                        <td>@reservation.StartDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td>@reservation.EndDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td>@duration.TotalHours.ToString("F1") h</td>
+                                        <td>@reservation.User?.Username</td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(reservation.Purpose))
+                                            {
+                                                <span title="@reservation.Purpose">
+                                                    @(reservation.Purpose.Length > 50 ? reservation.Purpose.Substring(0, 50) + "..." : reservation.Purpose)
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Brak opisu</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+    <div class="mt-4">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Powrót do raportów
+        </a>
+    </div>
+</div>

@@ -1,0 +1,116 @@
+@model Reservo.Models.Resource
+@{
+    ViewData["Title"] = "Edytuj zasób";
+    var categories = ViewBag.Categories as SelectList;
+}
+
+<div class="container mt-4">
+    <h2>Edytuj zasób</h2>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Edycja zasobu: @Model.Name</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="CreatedAt" />
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Name" class="form-label"></label>
+                                    <input asp-for="Name" class="form-control" />
+                                    <span asp-validation-for="Name" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="CategoryId" class="form-label">Kategoria</label>
+                                    <select asp-for="CategoryId" asp-items="categories" class="form-select">
+                                        <option value="">Wybierz kategorię</option>
+                                    </select>
+                                    <span asp-validation-for="CategoryId" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label"></label>
+                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Location" class="form-label"></label>
+                                    <input asp-for="Location" class="form-control" />
+                                    <span asp-validation-for="Location" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="MaxReservationHours" class="form-label">Maksymalny czas rezerwacji (godziny)</label>
+                                    <input asp-for="MaxReservationHours" class="form-control" type="number" min="1" max="168" />
+                                    <span asp-validation-for="MaxReservationHours" class="text-danger"></span>
+                                    <div class="form-text">Pozostaw puste jeśli brak ograniczeń</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input asp-for="IsAvailable" class="form-check-input" />
+                                <label asp-for="IsAvailable" class="form-check-label">Zasób dostępny</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Zapisz zmiany
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Anuluj
+                            </a>
+                            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-info">
+                                <i class="fas fa-info-circle"></i> Szczegóły
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Informacje</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Data utworzenia:</strong><br>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                    <p><strong>ID zasobu:</strong> @Model.Id</p>
+                    
+                    <hr>
+                    <h6>Podgląd</h6>
+                    @if (Model.Category != null)
+                    {
+                        <span class="badge mb-2" style="background-color: @Model.Category.Color">
+                            @Model.Category.Name
+                        </span><br>
+                    }
+                    <span class="badge @(Model.IsAvailable ? "bg-success" : "bg-danger")">
+                        @(Model.IsAvailable ? "Dostępny" : "Niedostępny")
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

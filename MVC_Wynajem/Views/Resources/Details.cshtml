@@ -1,0 +1,125 @@
+@model Reservo.Models.Resource
+@{
+    ViewData["Title"] = "Szczegóły zasobu";
+    var userRole = Context.Session.GetString("UserRole");
+    var activeReservations = ViewBag.ActiveReservations as List<Reservo.Models.Reservation>;
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>@Html.DisplayFor(model => model.Name)</h4>
+                    @if (Model.Category != null)
+                    {
+                        <span class="badge fs-6" style="background-color: @Model.Category.Color">
+                            @Model.Category.Name
+                        </span>
+                    }
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge @(Model.IsAvailable ? "bg-success" : "bg-danger") fs-6">
+                                        @(Model.IsAvailable ? "Dostępny" : "Niedostępny")
+                                    </span>
+                                </dd>
+                                
+                                @if (!string.IsNullOrEmpty(Model.Location))
+                                {
+                                    <dt class="col-sm-4">Lokalizacja:</dt>
+                                    <dd class="col-sm-8">@Html.DisplayFor(model => model.Location)</dd>
+                                }
+                                
+                                <dt class="col-sm-4">Max. rezerwacja:</dt>
+                                <dd class="col-sm-8">@Html.DisplayFor(model => model.MaxReservationHours) godzin</dd>
+                                
+                                <dt class="col-sm-4">Utworzono:</dt>
+                                <dd class="col-sm-8">@Html.DisplayFor(model => model.CreatedAt)</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            @if (!string.IsNullOrEmpty(Model.Description))
+                            {
+                                <h6>Opis:</h6>
+                                <p>@Html.DisplayFor(model => model.Description)</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="btn-group" role="group">
+                        @if (Model.IsAvailable)
+                        {
+                            <a href="@Url.Action("Create", "Reservations", new { resourceId = Model.Id })" class="btn btn-success">
+                                <i class="fas fa-calendar-plus"></i> Zarezerwuj
+                            </a>
+                        }
+                        <a href="@Url.Action("Availability", new { id = Model.Id })" class="btn btn-info">
+                            <i class="fas fa-calendar-alt"></i> Kalendarz dostępności
+                        </a>
+                        @if (userRole == "Admin")
+                        {
+                            <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> Edytuj
+                            </a>
+                            <a href="@Url.Action("Delete", new { id = Model.Id })" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Usuń
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Aktywne rezerwacje</h6>
+                </div>
+                <div class="card-body">
+                    @if (activeReservations?.Any() == true)
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var reservation in activeReservations.Take(5))
+                            {
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">@reservation.User?.Username</h6>
+                                        <small class="text-muted">@reservation.Status</small>
+                                    </div>
+                                    <p class="mb-1">
+                                        <strong>Od:</strong> @reservation.StartDate.ToString("dd.MM HH:mm")<br>
+                                        <strong>Do:</strong> @reservation.EndDate.ToString("dd.MM HH:mm")
+                                    </p>
+                                    @if (!string.IsNullOrEmpty(reservation.Purpose))
+                                    {
+                                        <small class="text-muted">@reservation.Purpose</small>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        @if (activeReservations.Count > 5)
+                        {
+                            <div class="text-center mt-2">
+                                <small class="text-muted">i @(activeReservations.Count - 5) więcej...</small>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted">Brak aktywnych rezerwacji</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">Powrót do listy zasobów</a>
+    </div>
+</div>

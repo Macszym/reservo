@@ -1,0 +1,93 @@
+@{
+    ViewData["Title"] = "Panel główny";
+    var username = ViewData["Username"]?.ToString();
+    var userRole = ViewData["UserRole"]?.ToString();
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>System Rezerwacji Zasobów - Reservo</h1>
+            <div class="alert alert-success">
+                <h4>Witaj @username!</h4>
+                <p>Jesteś zalogowany jako: <strong>@userRole</strong></p>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Rezerwacje</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Zarządzaj swoimi rezerwacjami zasobów</p>
+                            <a href="@Url.Action("Index", "Reservations")" class="btn btn-primary">Moje rezerwacje</a>
+                            <a href="@Url.Action("Create", "Reservations")" class="btn btn-success">Nowa rezerwacja</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Zasoby</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Przeglądaj dostępne zasoby</p>
+                            <a href="@Url.Action("Index", "Resources")" class="btn btn-primary">Przeglądaj zasoby</a>
+                            @if (userRole == "Admin")
+                            {
+                                <a href="@Url.Action("Create", "Resources")" class="btn btn-success">Dodaj zasób</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            @if (userRole == "Admin")
+            {
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Administracja</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Panel administracyjny</p>
+                                <a href="@Url.Action("Users", "IO")" class="btn btn-warning">Zarządzaj użytkownikami</a>
+                                <a href="@Url.Action("Index", "Categories")" class="btn btn-info">Zarządzaj kategoriami</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Raporty</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Zestawienia i statystyki</p>
+                                <a href="@Url.Action("Reports", "Home")" class="btn btn-secondary">Raporty</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Konto</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Użytkownik:</strong> @username</p>
+                    <p><strong>Rola:</strong> @userRole</p>
+                    <form asp-controller="IO" asp-action="Wyloguj" method="post">
+                        <button type="submit" class="btn btn-danger">Wyloguj</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

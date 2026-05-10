@@ -1,0 +1,127 @@
+@model Reservo.Models.Category
+@{
+    ViewData["Title"] = "Dodaj kategorię";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Dodaj nową kategorię</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label"></label>
+                            <input asp-for="Name" class="form-control" placeholder="np. Sale konferencyjne, Sprzęt IT" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label"></label>
+                            <textarea asp-for="Description" class="form-control" rows="3" 
+                                      placeholder="Opisz czym są zasoby w tej kategorii"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Color" class="form-label">Kolor kategorii</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <input asp-for="Color" type="color" class="form-control form-control-color" 
+                                           value="#007bff" title="Wybierz kolor kategorii" />
+                                    <span asp-validation-for="Color" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <input asp-for="Color" type="text" class="form-control" 
+                                           placeholder="#007bff" pattern="^#[0-9A-Fa-f]{6}$" />
+                                    <div class="form-text">Kod koloru hex (np. #007bff)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Zapisz kategorię
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Anuluj
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Podgląd</h6>
+                </div>
+                <div class="card-body">
+                    <div class="card preview-card">
+                        <div class="card-header text-white" style="background-color: #007bff;" id="colorPreview">
+                            <h6 class="mb-0" id="namePreview">Nazwa kategorii</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text" id="descriptionPreview">Opis kategorii pojawi się tutaj</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Wskazówki</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-lightbulb text-warning"></i> Wybierz intuicyjną nazwę kategorii</li>
+                        <li><i class="fas fa-palette text-info"></i> Kolor pomoże rozróżnić kategorie</li>
+                        <li><i class="fas fa-edit text-primary"></i> Opis ułatwi zrozumienie przeznaczenia</li>
+                        <li><i class="fas fa-cubes text-success"></i> Po utworzeniu możesz dodać zasoby</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Podgląd na żywo
+        document.addEventListener('DOMContentLoaded', function() {
+            const nameInput = document.querySelector('input[name="Name"]');
+            const descriptionInput = document.querySelector('textarea[name="Description"]');
+            const colorInputs = document.querySelectorAll('input[name="Color"]');
+            
+            const namePreview = document.getElementById('namePreview');
+            const descriptionPreview = document.getElementById('descriptionPreview');
+            const colorPreview = document.getElementById('colorPreview');
+            
+            function updatePreview() {
+                namePreview.textContent = nameInput.value || 'Nazwa kategorii';
+                descriptionPreview.textContent = descriptionInput.value || 'Opis kategorii pojawi się tutaj';
+                
+                const colorValue = colorInputs[0].value || '#007bff';
+                colorPreview.style.backgroundColor = colorValue;
+                colorInputs.forEach(input => {
+                    if (input !== document.activeElement) {
+                        input.value = colorValue;
+                    }
+                });
+            }
+            
+            nameInput.addEventListener('input', updatePreview);
+            descriptionInput.addEventListener('input', updatePreview);
+            colorInputs.forEach(input => {
+                input.addEventListener('input', updatePreview);
+            });
+        });
+    </script>
+}

@@ -1,0 +1,100 @@
+@model IEnumerable<Reservo.Models.Category>
+@{
+    ViewData["Title"] = "Zarządzanie kategoriami";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Zarządzanie kategoriami</h2>
+        <a href="@Url.Action("Create")" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Dodaj nową kategorię
+        </a>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="row">
+            @foreach (var category in Model)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center" 
+                             style="background-color: @category.Color; color: white;">
+                            <h5 class="mb-0">@category.Name</h5>
+                            <span class="badge bg-light text-dark">
+                                @(category.Resources?.Count ?? 0) zasobów
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(category.Description))
+                            {
+                                <p class="card-text">@category.Description</p>
+                            }
+                            else
+                            {
+                                <p class="card-text text-muted">Brak opisu</p>
+                            }
+                            
+                            @if (category.Resources?.Any() == true)
+                            {
+                                <div class="mb-3">
+                                    <h6>Przykładowe zasoby:</h6>
+                                    <ul class="list-unstyled">
+                                        @foreach (var resource in category.Resources.Take(3))
+                                        {
+                                            <li>
+                                                <small>
+                                                    <i class="fas fa-cube text-muted"></i>
+                                                    <a href="@Url.Action("Details", "Resources", new { id = resource.Id })" 
+                                                       class="text-decoration-none">
+                                                        @resource.Name
+                                                    </a>
+                                                </small>
+                                            </li>
+                                        }
+                                        @if (category.Resources.Count > 3)
+                                        {
+                                            <li><small class="text-muted">...i @(category.Resources.Count - 3) więcej</small></li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
+                        </div>
+                        <div class="card-footer">
+                            <div class="btn-group w-100" role="group">
+                                <a href="@Url.Action("Details", new { id = category.Id })" 
+                                   class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-info-circle"></i> Szczegóły
+                                </a>
+                                <a href="@Url.Action("Edit", new { id = category.Id })" 
+                                   class="btn btn-outline-warning btn-sm">
+                                    <i class="fas fa-edit"></i> Edytuj
+                                </a>
+                                <a href="@Url.Action("Delete", new { id = category.Id })" 
+                                   class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Usuń
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <h4><i class="fas fa-info-circle"></i> Brak kategorii</h4>
+            <p>Nie ma jeszcze żadnych kategorii w systemie.</p>
+            <a href="@Url.Action("Create")" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Dodaj pierwszą kategorię
+            </a>
+        </div>
+    }
+
+    <div class="mt-4">
+        <a href="@Url.Action("Zalogowany", "IO")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Powrót do panelu głównego
+        </a>
+    </div>
+</div>

@@ -1,0 +1,189 @@
+@model Reservo.Models.Category
+@{
+    ViewData["Title"] = "Szczegóły kategorii";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center" 
+                     style="background-color: @Model.Color; color: white;">
+                    <h4>@Model.Name</h4>
+                    <span class="badge bg-light text-dark fs-6">
+                        @(Model.Resources?.Count ?? 0) zasobów
+                    </span>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Nazwa:</dt>
+                        <dd class="col-sm-9">@Model.Name</dd>
+                        
+                        <dt class="col-sm-3">Opis:</dt>
+                        <dd class="col-sm-9">
+                            @if (!string.IsNullOrEmpty(Model.Description))
+                            {
+                                @Model.Description
+                            }
+                            else
+                            {
+                                <span class="text-muted">Brak opisu</span>
+                            }
+                        </dd>
+                        
+                        <dt class="col-sm-3">Kolor:</dt>
+                        <dd class="col-sm-9">
+                            <span class="badge" style="background-color: @Model.Color; color: white;">
+                                @Model.Color
+                            </span>
+                        </dd>
+                        
+                        <dt class="col-sm-3">ID kategorii:</dt>
+                        <dd class="col-sm-9">@Model.Id</dd>
+                    </dl>
+                </div>
+            </div>
+            
+            <!-- Lista zasobów w kategorii -->
+            @if (Model.Resources?.Any() == true)
+            {
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5>Zasoby w tej kategorii (@Model.Resources.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Nazwa</th>
+                                        <th>Lokalizacja</th>
+                                        <th>Status</th>
+                                        <th>Data utworzenia</th>
+                                        <th>Akcje</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var resource in Model.Resources.OrderBy(r => r.Name))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@resource.Name</strong>
+                                                @if (!string.IsNullOrEmpty(resource.Description))
+                                                {
+                                                    <br><small class="text-muted">@resource.Description</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(resource.Location))
+                                                {
+                                                    <i class="fas fa-map-marker-alt text-muted"></i>
+                                                    @resource.Location
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Brak lokalizacji</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge @(resource.IsAvailable ? "bg-success" : "bg-danger")">
+                                                    @(resource.IsAvailable ? "Dostępny" : "Niedostępny")
+                                                </span>
+                                            </td>
+                                            <td>@resource.CreatedAt.ToString("dd.MM.yyyy")</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="@Url.Action("Details", "Resources", new { id = resource.Id })" 
+                                                       class="btn btn-sm btn-outline-info" title="Szczegóły">
+                                                        <i class="fas fa-info-circle"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("Edit", "Resources", new { id = resource.Id })" 
+                                                       class="btn btn-sm btn-outline-warning" title="Edytuj">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("Availability", "Resources", new { id = resource.Id })" 
+                                                       class="btn btn-sm btn-outline-success" title="Dostępność">
+                                                        <i class="fas fa-calendar-check"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info mt-4">
+                    <h6><i class="fas fa-info-circle"></i> Brak zasobów</h6>
+                    <p>Ta kategoria nie zawiera jeszcze żadnych zasobów.</p>
+                    <a href="@Url.Action("Create", "Resources", new { categoryId = Model.Id })" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Dodaj zasób do tej kategorii
+                    </a>
+                </div>
+            }
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Akcje -->
+            <div class="card">
+                <div class="card-header">
+                    <h6>Akcje</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Edytuj kategorię
+                        </a>
+                        <a href="@Url.Action("Delete", new { id = Model.Id })" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Usuń kategorię
+                        </a>
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Powrót do listy
+                        </a>
+                        <a href="@Url.Action("Create", "Resources", new { categoryId = Model.Id })" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Dodaj zasób
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statystyki -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Statystyki</h6>
+                </div>
+                <div class="card-body">
+                    @{
+                        var totalResources = Model.Resources?.Count ?? 0;
+                        var availableResources = Model.Resources?.Count(r => r.IsAvailable) ?? 0;
+                        var unavailableResources = totalResources - availableResources;
+                    }
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5 class="text-primary">@totalResources</h5>
+                            <small>Wszystkich zasobów</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-success">@availableResources</h5>
+                            <small>Dostępnych</small>
+                        </div>
+                    </div>
+                    
+                    @if (unavailableResources > 0)
+                    {
+                        <hr>
+                        <div class="text-center">
+                            <h5 class="text-danger">@unavailableResources</h5>
+                            <small>Niedostępnych</small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

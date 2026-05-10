@@ -1,0 +1,214 @@
+@model Reservo.Models.Reservation
+@{
+    ViewData["Title"] = "Szczegóły rezerwacji";
+    var userRole = Context.Session.GetString("UserRole");
+    var currentUserId = Context.Session.GetString("UserId");
+    var canEdit = userRole == "Admin" || currentUserId == Model.UserId.ToString();
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Szczegóły rezerwacji #@Model.Id</h4>
+                    <span class="badge fs-6 @(Model.Status == Reservo.Models.ReservationStatus.Active ? "bg-success" : Model.Status == Reservo.Models.ReservationStatus.Cancelled ? "bg-danger" : "bg-secondary")">
+                        @switch (Model.Status)
+                        {
+                            case Reservo.Models.ReservationStatus.Active:
+                                <text>Aktywna</text>
+                                break;
+                            case Reservo.Models.ReservationStatus.Cancelled:
+                                <text>Anulowana</text>
+                                break;
+                            case Reservo.Models.ReservationStatus.Completed:
+                                <text>Zakończona</text>
+                                break;
+                            default:
+                                <text>@Model.Status</text>
+                                break;
+                        }
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Informacje o rezerwacji</h6>
+                            <dl class="row">
+                                <dt class="col-sm-5">Data rozpoczęcia:</dt>
+                                <dd class="col-sm-7">
+                                    @Model.StartDate.ToString("dd.MM.yyyy HH:mm")
+                                    @{
+                                        var isActive = Model.StartDate <= DateTime.Now && Model.EndDate > DateTime.Now;
+                                        var isFuture = Model.StartDate > DateTime.Now;
+                                        var isPast = Model.EndDate <= DateTime.Now;
+                                    }
+                                    @if (isActive)
+                                    {
+                                        <span class="badge bg-warning text-dark ms-1">AKTYWNA</span>
+                                    }
+                                    else if (isFuture)
+                                    {
+                                        <span class="badge bg-info ms-1">PRZYSZŁA</span>
+                                    }
+                                    else if (isPast)
+                                    {
+                                        <span class="badge bg-secondary ms-1">PRZESZŁA</span>
+                                    }
+                                </dd>
+                                
+                                <dt class="col-sm-5">Data zakończenia:</dt>
+                                <dd class="col-sm-7">@Model.EndDate.ToString("dd.MM.yyyy HH:mm")</dd>
+                                
+                                <dt class="col-sm-5">Czas trwania:</dt>
+                                <dd class="col-sm-7">
+                                    @{
+                                        var duration = Model.EndDate - Model.StartDate;
+                                    }
+                                    @if (duration.Days > 0)
+                                    {
+                                        <text>@duration.Days dni @duration.Hours godzin</text>
+                                    }
+                                    else
+                                    {
+                                        <text>@duration.TotalHours.ToString("F1") godzin</text>
+                                    }
+                                </dd>
+                                
+                                <dt class="col-sm-5">Użytkownik:</dt>
+                                <dd class="col-sm-7">
+                                    @Model.User?.Username
+                                    @if (Model.User?.Role != null)
+                                    {
+                                        <small class="text-muted">(@Model.User.Role)</small>
+                                    }
+                                </dd>
+                                
+                                <dt class="col-sm-5">Data utworzenia:</dt>
+                                <dd class="col-sm-7">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
+                            </dl>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Zasób</h6>
+                            @if (Model.Resource != null)
+                            {
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            @Model.Resource.Name
+                                            @if (Model.Resource.Category != null)
+                                            {
+                                                <span class="badge ms-2" style="background-color: @Model.Resource.Category.Color">
+                                                    @Model.Resource.Category.Name
+                                                </span>
+                                            }
+                                        </h6>
+                                        @if (!string.IsNullOrEmpty(Model.Resource.Description))
+                                        {
+                                            <p class="card-text">@Model.Resource.Description</p>
+                                        }
+                                        @if (!string.IsNullOrEmpty(Model.Resource.Location))
+                                        {
+                                            <p class="card-text">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-map-marker-alt"></i> @Model.Resource.Location
+                                                </small>
+                                            </p>
+                                        }
+                                        <a href="@Url.Action("Details", "Resources", new { id = Model.ResourceId })" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-info-circle"></i> Szczegóły zasobu
+                                        </a>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    
+                    @if (!string.IsNullOrEmpty(Model.Purpose))
+                    {
+                        <hr>
+                        <h6>Cel rezerwacji</h6>
+                        <p class="bg-light p-3 rounded">@Model.Purpose</p>
+                    }
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Akcje -->
+            <div class="card">
+                <div class="card-header">
+                    <h6>Akcje</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        @if (canEdit && Model.Status == Reservo.Models.ReservationStatus.Active && Model.StartDate > DateTime.Now)
+                        {
+                            <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> Edytuj rezerwację
+                            </a>
+                        }
+                        
+                        @if (canEdit && Model.Status == Reservo.Models.ReservationStatus.Active)
+                        {
+                            <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" 
+                                  onsubmit="return confirm('Czy na pewno chcesz anulować tę rezerwację?')">
+                                <button type="submit" class="btn btn-danger w-100">
+                                    <i class="fas fa-times"></i> Anuluj rezerwację
+                                </button>
+                            </form>
+                        }
+                        
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Powrót do listy
+                        </a>
+                        
+                        <a href="@Url.Action("Availability", "Resources", new { id = Model.ResourceId })" 
+                           class="btn btn-info">
+                            <i class="fas fa-calendar-check"></i> Dostępność zasobu
+                        </a>
+                        
+                        <a href="@Url.Action("Create", new { resourceId = Model.ResourceId })" 
+                           class="btn btn-success">
+                            <i class="fas fa-plus"></i> Nowa rezerwacja
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Informacje dodatkowe -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Informacje</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID rezerwacji:</strong> @Model.Id</p>
+                    <p><strong>ID zasobu:</strong> @Model.ResourceId</p>
+                    <p><strong>ID użytkownika:</strong> @Model.UserId</p>
+                    
+                    @if (Model.Resource?.MaxReservationHours > 0)
+                    {
+                        var reservationHours = (Model.EndDate - Model.StartDate).TotalHours;
+                        var isWithinLimit = reservationHours <= Model.Resource.MaxReservationHours;
+                        
+                        <hr>
+                        <p>
+                            <strong>Limit czasu:</strong> @Model.Resource.MaxReservationHours h<br>
+                            <strong>Czas rezerwacji:</strong> @reservationHours.ToString("F1") h
+                            @if (isWithinLimit)
+                            {
+                                <span class="badge bg-success ms-1">OK</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning ms-1">Przekroczony</span>
+                            }
+                        </p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

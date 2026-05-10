@@ -1,0 +1,97 @@
+@model Reservo.Models.Resource
+@{
+    ViewData["Title"] = "Usuń zasób";
+}
+
+<div class="container mt-4">
+    <h2>Usuń zasób</h2>
+    
+    <div class="alert alert-danger">
+        <h4><i class="fas fa-exclamation-triangle"></i> Potwierdzenie usunięcia</h4>
+        <p>Czy na pewno chcesz usunąć ten zasób? Ta operacja jest nieodwracalna.</p>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>Szczegóły usuwanego zasobu</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Nazwa:</dt>
+                <dd class="col-sm-9">@Model.Name</dd>
+                
+                @if (!string.IsNullOrEmpty(Model.Description))
+                {
+                    <dt class="col-sm-3">Opis:</dt>
+                    <dd class="col-sm-9">@Model.Description</dd>
+                }
+                
+                @if (!string.IsNullOrEmpty(Model.Location))
+                {
+                    <dt class="col-sm-3">Lokalizacja:</dt>
+                    <dd class="col-sm-9">@Model.Location</dd>
+                }
+                
+                <dt class="col-sm-3">Kategoria:</dt>
+                <dd class="col-sm-9">
+                    @if (Model.Category != null)
+                    {
+                        <span class="badge" style="background-color: @Model.Category.Color">
+                            @Model.Category.Name
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Brak kategorii</span>
+                    }
+                </dd>
+                
+                <dt class="col-sm-3">Status:</dt>
+                <dd class="col-sm-9">
+                    <span class="badge @(Model.IsAvailable ? "bg-success" : "bg-danger")">
+                        @(Model.IsAvailable ? "Dostępny" : "Niedostępny")
+                    </span>
+                </dd>
+                
+                @if (Model.MaxReservationHours > 0)
+                {
+                    <dt class="col-sm-3">Maks. czas rezerwacji:</dt>
+                    <dd class="col-sm-9">@Model.MaxReservationHours godzin</dd>
+                }
+                
+                <dt class="col-sm-3">Data utworzenia:</dt>
+                <dd class="col-sm-9">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
+            </dl>
+            
+            <!-- Ostrzeżenie o powiązanych rezerwacjach -->
+            @if (Model.Reservations != null && Model.Reservations.Any())
+            {
+                <div class="alert alert-warning mt-3">
+                    <h6><i class="fas fa-exclamation-circle"></i> Uwaga!</h6>
+                    <p>Ten zasób ma <strong>@Model.Reservations.Count</strong> powiązanych rezerwacji. Usunięcie zasobu spowoduje również usunięcie wszystkich jego rezerwacji.</p>
+                </div>
+            }
+            
+            <form asp-action="Delete" method="post" class="mt-4">
+                <input type="hidden" asp-for="Id" />
+                <div class="row">
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Tak, usuń zasób
+                        </button>
+                    </div>
+                    <div class="col-auto">
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Anuluj
+                        </a>
+                    </div>
+                    <div class="col-auto">
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-info">
+                            <i class="fas fa-info-circle"></i> Szczegóły
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

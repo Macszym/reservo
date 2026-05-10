@@ -1,0 +1,18 @@
+# Build outputs
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Local database
+*.db
+*.sqlite
+*.sqlite-journal
+
+# Editors
+.idea/
+.vscode/
+.DS_Store
